@@ -4,10 +4,12 @@ contract Splitter {
     
     uint public balance;
     
-    address[] private friends;
+    address[] public friends;
     
     address public owner;
     
+    event LogAddFriendEvent(address main, address friend);
+
     event LogFailSendEvent(address main, address friend, uint value, uint total);
 
     event LogSendEvent(address main, address friend, uint value, uint total);
@@ -30,6 +32,17 @@ contract Splitter {
         friends = addresses;
     }
 
+
+    function addFriend(address newFriend) isOwner public {
+    
+        for(uint i=0; i<friends.length; i++){
+            if(friends[i] == newFriend) revert();
+        }
+    
+        friends.push(newFriend);
+        LogAddFriendEvent(msg.sender, newFriend);
+
+    }
     
     function split() payable isOwner public returns (bool fail) {
         
