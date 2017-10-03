@@ -20,6 +20,9 @@ contract Splitter {
     }
     
     function Splitter(address[] addresses) public {
+
+        if(addresses.length == 0) revert();
+
         for(uint i=0; i<addresses.length; i++){
             if(addresses[i] == msg.sender) revert();
         }
