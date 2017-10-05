@@ -1,69 +1,82 @@
 pragma solidity ^0.4.5;
 
 contract Splitter {
+
+
+    address public alice;
     
+    address private bob;
+    
+    address private carol;
+
     uint public balance;
-    
-    address[] public friends;
-    
-    address public owner;
-    
-    event LogAddFriendEvent(address main, address friend);
 
-    event LogFailSendEvent(address main, address friend, uint value, uint total);
+    mapping (address => uint) public pendingWithdrawals;
 
-    event LogSendEvent(address main, address friend, uint value, uint total);
+    mapping (address => uint) public balances;
+
+    event LogSendEvent(address main, address friend, uint splitQuantity, uint totalQuantity);
+    event LogWithdrawEvent(address main, uint quantity);
 
     modifier isOwner {
-        if (msg.sender != owner) {
-            revert();
-        }
+        require(msg.sender == alice);
         _;
     }
     
-    function Splitter(address[] addresses) public {
+    function Splitter(address carolAddress, address bobAddress) public {
 
-        if(addresses.length == 0) revert();
-
-        for(uint i=0; i<addresses.length; i++){
-            if(addresses[i] == msg.sender) revert();
-        }
-        owner = msg.sender;
-        friends = addresses;
+        alice = msg.sender; 
+        bob = bobAddress;
+        carol = carolAddress;
     }
 
 
-    function addFriend(address newFriend) isOwner public {
     
-        for(uint i=0; i<friends.length; i++){
-            if(friends[i] == newFriend) revert();
-        }
-    
-        friends.push(newFriend);
-        LogAddFriendEvent(msg.sender, newFriend);
-
-    }
-    
-    function split() payable isOwner public returns (bool fail) {
+    function split() payable public {
         
-        fail = false;
-        uint moneyToSent = msg.value / friends.length;
+        require(msg.value > 0);
+        
+        uint moneyToSent = msg.value / 2;
         uint totalSent;
-        for(uint i=0; i<friends.length; i++){
-            if(!friends[i].send(moneyToSent)){
-                LogFailSendEvent(owner, friends[i], moneyToSent, msg.value);
-                fail = true;
-            }else{
-                totalSent += moneyToSent;
-                LogSendEvent(owner, friends[i], moneyToSent, msg.value);
-            }
+        
+        if(moneyToSent>0) {
+            
+            pendingWithdrawals[bob] += moneyToSent;
+            LogSendEvent(msg.sender, bob, moneyToSent, msg.value);
+            totalSent += moneyToSent;
+        
+            pendingWithdrawals[carol] += moneyToSent;
+            LogSendEvent(msg.sender, carol, moneyToSent, msg.value);
+            totalSent += moneyToSent;
+            
         }
-        balance = totalSent;
+
+        if (msg.value % 2 > 0) {
+        	msg.sender.transfer(1);
+            LogSendEvent(msg.sender, msg.sender, 1, msg.value);
+        }
+        
+        balance += msg.value;
+        balances[msg.sender] += msg.value;
 
     }
     
-  function kill() isOwner public {
+    function withdraw() public returns (bool done) {
+        
+        uint amount = pendingWithdrawals[msg.sender];
+        done = false;
+        
+        if (amount>0) {
+            
+            pendingWithdrawals[msg.sender] = 0;
+            msg.sender.transfer(amount);
+            LogWithdrawEvent(msg.sender, amount);
+            done = true;
+        }
+    }
+    
+    function kill() isOwner public {
         selfdestruct(msg.sender);
-  }
+    }
     
 }
