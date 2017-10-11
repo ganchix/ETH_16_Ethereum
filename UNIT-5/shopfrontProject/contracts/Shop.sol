@@ -10,9 +10,9 @@ contract Shop {
 
     uint ownerWithdrawals;
 
-	mapping (uint => Product) public stock;
+	mapping (uint => Product) stock;
 	
-	uint[] public products;
+	uint[] products;
 	
 	address administrator;
 	
@@ -26,24 +26,53 @@ contract Shop {
 
     event LogWithdrawEvent(address main, uint quantity);
 
-	function Shop(address administratorAddress) public {
+	function Shop(address administratorAddress) 
+		public
+	{
 		administrator = administratorAddress;
 		owner = msg.sender;
 	}
 
-    modifier isOwner {
+    modifier isOwner 
+    {
         require(msg.sender == owner);
         _;
     }
 
-    modifier isAdministrator {
+    modifier isAdministrator 
+    {
         require(msg.sender == administrator);
         _;
     }
     
-    
-    function addProduct(uint id, uint price, string name) public isAdministrator{
+	function getProductCount() 
+		constant 
+		returns (uint length) 
+	{	
+		return products.length;	
+	}
 
+	function getProductIdAt(uint index)
+		constant
+		returns (uint id) 
+	{
+		return products[index];
+	}
+
+	function getProduct(uint id)
+		constant
+		returns (string name, uint price, uint stockBalance) 
+	{
+		Product product = stock[id];
+		return (product.name,
+			product.price,
+			product.stockBalance);
+	}
+    
+    function addProduct(uint id, uint price, string name)
+   		public 
+   		isAdministrator
+   	{
         stock[id].price = price;
         stock[id].stockBalance += 1;
         stock[id].name = name;
@@ -52,15 +81,20 @@ contract Shop {
 
     }
     
-    function deleteProduct(uint id) public isAdministrator {
+    function deleteProduct(uint id) 
+    	public 
+    	isAdministrator
+    {
         stock[id].price = 0;
         stock[id].stockBalance = 0;
         stock[id].name = "";
     }
     
     
-    function buyProduct(uint id) payable public{
-        
+    function buyProduct(uint id) 
+    	payable
+    	public
+    {    
         require(stock[id].price > 0);
         require(stock[id].price <= msg.value);
         require(stock[id].stockBalance > 0);
@@ -69,7 +103,10 @@ contract Shop {
         BuyProductEvent(id);
     }
     
-    function withdraw() public isOwner {
+    function withdraw() 
+    	public
+    	isOwner
+    {
         
         if (ownerWithdrawals<=0) revert(); 
             
