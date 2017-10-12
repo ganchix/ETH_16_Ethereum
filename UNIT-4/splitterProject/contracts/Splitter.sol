@@ -36,7 +36,7 @@ contract Splitter is Owned{
         success = internalSplit(friendOne, friendTwo);        
     }
     
-    function internalSplit(address friendOne, address friendTwo) isNotKilled private returns (bool){
+    function internalSplit(address friendOne, address friendTwo) isNotKilledAndNotPaused private returns (bool){
         
         require(msg.value > 0);
         
@@ -62,7 +62,7 @@ contract Splitter is Owned{
 		return true;
     }
 
-    function withdraw() public returns (bool done) {
+    function withdraw() isNotKilledAndNotPaused public returns (bool done) {
         
         uint amount = pendingWithdrawals[msg.sender];
         

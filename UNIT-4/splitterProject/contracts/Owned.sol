@@ -4,10 +4,12 @@ contract Owned{
 
     address public owner;
    	bool killed;
+   	bool paused;
        
-    function Owned(){
+    function Owned() public{
           owner = msg.sender;
           killed = false;
+          paused = false;
     }
     
 	modifier isOwner {
@@ -15,11 +17,15 @@ contract Owned{
         _;
     }
 
-    modifier isNotKilled {
-    	require(!killed);
+    modifier isNotKilledAndNotPaused {
+    	require(!killed && !paused);
         _;
     }
     
+    function setPause(bool pauseValue) isOwner public {
+    	paused = pauseValue;
+    }
+
     function kill() isOwner public {
     	require(!killed);
     	killed = true;
