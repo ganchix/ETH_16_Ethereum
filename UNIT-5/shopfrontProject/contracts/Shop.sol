@@ -10,6 +10,8 @@ contract Shop {
 
     uint ownerWithdrawals;
 
+	mapping (address => uint) public payBack;
+
 	mapping (uint => Product) stock;
 	
 	uint[] products;
@@ -25,6 +27,8 @@ contract Shop {
 	event BuyProductEvent(uint id);
 
     event LogWithdrawEvent(address main, uint quantity);
+
+    event LogPayMeBackEvent(address main, uint quantity);
 
 	function Shop(address administratorAddress) 
 		public
@@ -124,6 +128,10 @@ contract Shop {
         require(stock[id].stockBalance > 0);
         stock[id].stockBalance--;
         ownerWithdrawals += stock[id].price;
+        int payBack=msg.value-stock[id].price;
+
+        if(payBack>0) payBack[msg.sender]=payBack;
+        
         BuyProductEvent(id);
     }
     
@@ -138,5 +146,17 @@ contract Shop {
         msg.sender.transfer(ownerWithdrawals);
         LogWithdrawEvent(msg.sender, ownerWithdrawals);
         
+    }
+
+    function payMeBack()
+    	public
+    {
+
+        if (payBack[msg.sender]<=0) revert(); 
+            
+        payBack[msg.sender] = 0;
+        msg.sender.transfer(payBack[msg.sender]);
+        LogPayMeBackEvent(msg.sender, payBack[msg.sender]);
+
     }
 }
