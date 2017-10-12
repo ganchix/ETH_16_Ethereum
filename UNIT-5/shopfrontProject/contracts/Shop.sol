@@ -126,10 +126,11 @@ contract Shop {
         require(stock[id].price > 0);
         require(stock[id].price <= msg.value);
         require(stock[id].stockBalance > 0);
+        
         stock[id].stockBalance--;
         ownerWithdrawals += stock[id].price;
+        
         int payBack=msg.value-stock[id].price;
-
         if(payBack>0) payBack[msg.sender]=payBack;
         
         BuyProductEvent(id);
