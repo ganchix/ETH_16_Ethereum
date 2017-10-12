@@ -1,9 +1,10 @@
 pragma solidity ^0.4.5;
 
-contract Splitter {
+import "./Owned.sol";
 
+contract Splitter is Owned{
 
-    address public alice;
+	address public alice;
     
     address private bob;
     
@@ -13,13 +14,11 @@ contract Splitter {
 
     event LogSendEvent(address main, address friend, uint splitQuantity, uint totalQuantity);
     event LogWithdrawEvent(address main, uint quantity);
-
-    modifier isOwner {
-        require(msg.sender == alice);
-        _;
-    }
     
     function Splitter(address carolAddress, address bobAddress) public {
+    	require(carolAddress != bobAddress);
+    	require(msg.sender != bobAddress && msg.sender != carolAddress);
+    	require(carolAddress != address(0) && bobAddress != address(0));
 
         alice = msg.sender; 
         bob = bobAddress;
@@ -28,7 +27,16 @@ contract Splitter {
 
 
     
-    function split() payable public {
+    function split() payable public returns (bool success) {
+        success = internalSplit(bob, carol);        
+    }
+    
+    function splitWithOtherFriends(address friendOne, address friendTwo) payable public returns (bool success) {
+    	require(friendOne != address(0) && friendTwo != address(0));
+        success = internalSplit(friendOne, friendTwo);        
+    }
+    
+    function internalSplit(address friendOne, address friendTwo) isNotKilled private returns (bool){
         
         require(msg.value > 0);
         
@@ -36,23 +44,25 @@ contract Splitter {
         
         if(moneyToSent>0) {
             
-            pendingWithdrawals[bob] += moneyToSent;
-            LogSendEvent(msg.sender, bob, moneyToSent, msg.value);
+            pendingWithdrawals[friendOne] += moneyToSent;
+            LogSendEvent(msg.sender, friendOne, moneyToSent, msg.value);
         
-            pendingWithdrawals[carol] += moneyToSent;
-            LogSendEvent(msg.sender, carol, moneyToSent, msg.value);
+            pendingWithdrawals[friendTwo] += moneyToSent;
+            LogSendEvent(msg.sender, friendTwo, moneyToSent, msg.value);
             
         }
 
-        if (msg.value % 2 > 0) {
-        	pendingWithdrawals[alice] += 1;
-            LogSendEvent(msg.sender, alice, 1, msg.value);
-        }
-        
+		uint remainder = msg.value % 2;
 
+		if (remainder > 0) {
+    		pendingWithdrawals[alice] += remainder;
+    		LogSendEvent(msg.sender, alice, remainder, msg.value);
+		}
+
+		return true;
     }
-    
-    function withdraw() public {
+
+    function withdraw() public returns (bool done) {
         
         uint amount = pendingWithdrawals[msg.sender];
         
@@ -62,10 +72,8 @@ contract Splitter {
         msg.sender.transfer(amount);
         LogWithdrawEvent(msg.sender, amount);
         
-    }
-    
-    function kill() isOwner public {
-        selfdestruct(msg.sender);
+        return true;
+        
     }
     
 }
