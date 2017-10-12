@@ -20,7 +20,7 @@ contract Shop {
 
 	event AddProductEvent(uint id, uint price, string name);
 	
-	event DeleteProductEvent(uint id, uint price, string name);
+	event DeleteProductEvent(uint id);
 	
 	event BuyProductEvent(uint id);
 
@@ -73,10 +73,10 @@ contract Shop {
    		public 
    		isAdministrator
    	{
+   		products.push(id);
         stock[id].price = price;
         stock[id].stockBalance += 1;
         stock[id].name = name;
-        products.push(id);
         AddProductEvent(id, price, name);
 
     }
@@ -85,10 +85,29 @@ contract Shop {
     	public 
     	isAdministrator
     {
-        stock[id].price = 0;
-        stock[id].stockBalance = 0;
-        stock[id].name = "";
+
+        uint index = indexOf(id);
+
+        for (uint i = index; i<products.length-1; i++){
+            products[i] = products[i+1];
+        }
+        delete products[products.length-1];
+        products.length--;
+        delete stock[id];
+        DeleteProductEvent(id);
     }
+
+    function indexOf(uint id) 
+    	private
+    	returns(uint) 
+	{
+    
+        for (uint i = 0; i<products.length-1; i++){
+             if(products[i] == id) return i;
+        }
+       	throw;
+  	}
+
     
     
     function buyProduct(uint id) 
