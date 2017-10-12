@@ -29,7 +29,12 @@ contract Shop {
 	function Shop(address administratorAddress) 
 		public
 	{
-		administrator = administratorAddress;
+		if(administratorAddress == address(0)){
+			administrator = msg.sender;
+		}
+		else {
+			administrator = administratorAddress;
+		}
 		owner = msg.sender;
 	}
 
