@@ -5,7 +5,7 @@ import "./Pausable.sol";
 
 contract Killable is Pausable{
 
-	bool public killed;
+	bool killed;
     
 	event LogKilledStatusEvent(address main, bool killValue);
     
@@ -24,12 +24,19 @@ contract Killable is Pausable{
     
 	function kill(bool killValue) 
 		isOwner 
-		isPaused 
 		public 
 	{
+		require(isPaused());
 		require(killValue != killed);
 		killed = killValue;
 		LogKilledStatusEvent(msg.sender, killValue);
+	}
+
+	function isKilled()
+		public
+		returns (bool isIndeed)
+	{
+		return killed;
 	}
 
 	function emergencyWithdrawal() 

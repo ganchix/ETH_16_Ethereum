@@ -4,7 +4,7 @@ import "./Owned.sol";
 
 contract Pausable is Owned{
 
-	bool public paused;
+	bool paused;
     
 	event LogPauseEvent(address main, bool pauseValue);
 
@@ -20,10 +20,11 @@ contract Pausable is Owned{
  		_;
 	}
 
-	modifier isPaused 
+	function isPaused()
+		public
+		returns (bool isIndeed)
 	{
-		require(paused);
- 		_;
+		return paused;
 	}
     
 	function pause(bool pauseValue) 
