@@ -11,7 +11,7 @@ contract('Splitter', function(accounts) {
 
     var contribution = 80;
 
-    var partContribution = 99997844300000000040;
+    var partContribution = 99997842100000000040;
 
     beforeEach(function() {
 
@@ -33,7 +33,7 @@ contract('Splitter', function(accounts) {
 
     it("should apply the split correctly to bob and carol when not pass addresses", function() {
 
-        return contract.split("","",{ from: alice, value: contribution })
+        return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(tx) {
                 contract.withdraw({ from: carol })
                     .then(function() {

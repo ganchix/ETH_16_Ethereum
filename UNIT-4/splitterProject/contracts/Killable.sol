@@ -1,6 +1,5 @@
 pragma solidity ^0.4.5;
 
-import "./Owned.sol";
 import "./Pausable.sol";
 
 

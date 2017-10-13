@@ -1,8 +1,6 @@
 pragma solidity ^0.4.5;
 
-import "./Owned.sol";
 import "./Killable.sol";
-import "./Pausable.sol";
 
 contract Splitter is Killable{
 
