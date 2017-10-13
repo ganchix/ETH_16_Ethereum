@@ -5,26 +5,16 @@ import "./Killable.sol";
 contract Splitter is Killable{
 
 	address public alice;
-    
-	address private bob;
-    
-	address private carol;
 
 	mapping (address => uint) public pendingWithdrawals;
 
 	event LogSendEvent(address main, address friend, uint splitQuantity, uint totalQuantity);
 	event LogWithdrawEvent(address main, uint quantity);
     
-	function Splitter(address carolAddress, address bobAddress) 
+	function Splitter() 
 		public
 	{
-		require(carolAddress != bobAddress);
-		require(msg.sender != bobAddress && msg.sender != carolAddress);
-		require(carolAddress != address(0) && bobAddress != address(0));
-
 		alice = msg.sender; 
-		bob = bobAddress;
-		carol = carolAddress;
 	}
 
 	function split(address friendOne, address friendTwo) 
