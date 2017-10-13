@@ -1,8 +1,10 @@
 pragma solidity ^0.4.5;
 
 import "./Owned.sol";
+import "./Killable.sol";
+import "./Pausable.sol";
 
-contract Splitter is Owned{
+contract Splitter is Owned, Killable{
 
 	address public alice;
     
@@ -15,7 +17,9 @@ contract Splitter is Owned{
     event LogSendEvent(address main, address friend, uint splitQuantity, uint totalQuantity);
     event LogWithdrawEvent(address main, uint quantity);
     
-    function Splitter(address carolAddress, address bobAddress) public {
+    function Splitter(address carolAddress, address bobAddress) 
+   		public
+   	{
     	require(carolAddress != bobAddress);
     	require(msg.sender != bobAddress && msg.sender != carolAddress);
     	require(carolAddress != address(0) && bobAddress != address(0));
@@ -25,18 +29,26 @@ contract Splitter is Owned{
         carol = carolAddress;
     }
 
-
-    
-    function split() payable public returns (bool success) {
-        success = internalSplit(bob, carol);        
+    function split(address friendOneOrBob, address friendTwoOrCarol) 
+    	payable
+    	public
+    	returns (bool success) 
+    {
+    	if(friendOneOrBob == address(0)){
+    	    friendOneOrBob = bob;
+    	} 
+    	if(friendTwoOrCarol == address(0)){
+    	    friendTwoOrCarol = carol;
+    	} 
+    	success = internalSplit(friendOneOrBob, friendTwoOrCarol);        
     }
     
-    function splitWithOtherFriends(address friendOne, address friendTwo) payable public returns (bool success) {
-    	require(friendOne != address(0) && friendTwo != address(0));
-        success = internalSplit(friendOne, friendTwo);        
-    }
-    
-    function internalSplit(address friendOne, address friendTwo) isNotKilledAndNotPaused private returns (bool){
+    function internalSplit(address friendOne, address friendTwo) 
+        isNotKilled
+        isNotPaused
+        private 
+        returns (bool success)
+    {
         
         require(msg.value > 0);
         
@@ -62,7 +74,12 @@ contract Splitter is Owned{
 		return true;
     }
 
-    function withdraw() isNotKilledAndNotPaused public returns (bool done) {
+    function withdraw() 
+        isNotKilled
+        isNotPaused
+        public 
+        returns (bool done) 
+    {
         
         uint amount = pendingWithdrawals[msg.sender];
         
