@@ -4,11 +4,11 @@ import "./Owned.sol";
 
 contract Pausable is Owned{
 
-   	bool paused;
+	bool paused;
     
-	event LogPauseEvent(address main, bool pauseValue);
+    event LogPauseEvent(address main, bool pauseValue);
 
-    function Pausable() 
+	function Pausable() 
     	public
     {
           paused = false;

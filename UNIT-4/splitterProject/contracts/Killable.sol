@@ -6,21 +6,21 @@ import "./Pausable.sol";
 
 contract Killable is Owned, Pausable{
 
-   	bool killed;
+	bool killed;
     
-    event LogKilledStatusEvent(address main, bool killValue);
+	event LogKilledStatusEvent(address main, bool killValue);
     
-    function Killable() 
+	function Killable() 
     	public
     {
           killed = false;
     }
     
 
-    modifier isNotKilled 
-    {
-    	require(!killed);
-        _;
+	modifier isNotKilled 
+	{
+		require(!killed);
+		_;
     }
     
 
