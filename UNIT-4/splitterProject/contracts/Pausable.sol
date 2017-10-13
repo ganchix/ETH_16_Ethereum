@@ -4,7 +4,7 @@ import "./Owned.sol";
 
 contract Pausable is Owned{
 
-	bool paused;
+	bool public paused;
     
 	event LogPauseEvent(address main, bool pauseValue);
 

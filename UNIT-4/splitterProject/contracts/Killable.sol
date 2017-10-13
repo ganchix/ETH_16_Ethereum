@@ -4,9 +4,9 @@ import "./Owned.sol";
 import "./Pausable.sol";
 
 
-contract Killable is Owned, Pausable{
+contract Killable is Pausable{
 
-	bool killed;
+	bool public killed;
     
 	event LogKilledStatusEvent(address main, bool killValue);
     

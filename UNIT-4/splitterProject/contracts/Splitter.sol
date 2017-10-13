@@ -4,7 +4,7 @@ import "./Owned.sol";
 import "./Killable.sol";
 import "./Pausable.sol";
 
-contract Splitter is Owned, Killable{
+contract Splitter is Killable{
 
 	address public alice;
     
@@ -29,29 +29,15 @@ contract Splitter is Owned, Killable{
 		carol = carolAddress;
 	}
 
-	function split(address friendOneOrBob, address friendTwoOrCarol) 
+	function split(address friendOne, address friendTwo) 
 		payable
+		isNotKilled
+		isNotPaused
 		public
 		returns (bool success) 
 	{
-		if(friendOneOrBob == address(0)){
-			friendOneOrBob = bob;
-		}
-
-		if(friendTwoOrCarol == address(0)){
-			friendTwoOrCarol = carol;
-		} 
-
-		success = internalSplit(friendOneOrBob, friendTwoOrCarol);        
-    }
-
-	function internalSplit(address friendOne, address friendTwo) 
-		isNotKilled
-		isNotPaused
-		private 
-		returns (bool success)
-	{
-
+		require(friendOne != friendTwo);
+		require(friendOne != address(0) && friendTwo != address(0));
 		require(msg.value > 0);
 
 		uint moneyToSent = msg.value / 2;
@@ -73,8 +59,9 @@ contract Splitter is Owned, Killable{
 			LogSendEvent(msg.sender, alice, remainder, msg.value);
 		}
 
-		return true;
+		return true;    
 	}
+
 
 	function withdraw() 
 		isNotKilled
