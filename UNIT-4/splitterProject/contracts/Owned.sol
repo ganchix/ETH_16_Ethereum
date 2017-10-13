@@ -12,8 +12,8 @@ contract Owned{
     
 	modifier isOwner 
 	{
-    	require(msg.sender == owner);
-    	_;
+		require(msg.sender == owner);
+		_;
 	}
 
 }
