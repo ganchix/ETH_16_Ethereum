@@ -11,7 +11,7 @@ contract('Splitter', function(accounts) {
 
     var contribution = 80;
 
-    var partContribution = 99997842100000000040;
+    var partContribution = 99997844300000000040;
 
     beforeEach(function() {
 
@@ -35,28 +35,28 @@ contract('Splitter', function(accounts) {
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(tx) {
-                contract.withdraw({ from: carol })
-                    .then(function() {
-                        assert.equal(partContribution, web3.eth.getBalance(carol).toString(10), "The split is not correct");
-                        contract.withdraw({ from: bob })
-                            .then(function() {
-                                assert.equal(partContribution, web3.eth.getBalance(bob).toString(10), "The split is not correct");
-                            });
-                    });
+            contract.withdraw({ from: carol })
+            .then(function() {
+                assert.equal(partContribution, web3.eth.getBalance(carol).toString(10), "The split is not correct");
+            contract.withdraw({ from: bob })
+            .then(function() {
+                assert.equal(partContribution, web3.eth.getBalance(bob).toString(10), "The split is not correct");
+            });
+            });
             });
     });
     it("should apply the split correctly to addresses", function() {
 
         return contract.split(jenny, jhon, { from: alice, value: contribution })
             .then(function(tx) {
-                contract.withdraw({ from: jenny })
-                    .then(function() {
-                        assert.equal(partContribution, web3.eth.getBalance(jenny).toString(10), "The split is not correct");
-                        contract.withdraw({ from: jhon })
-                            .then(function() {
-                                assert.equal(partContribution, web3.eth.getBalance(jhon).toString(10), "The split is not correct");
-                            });
-                    });
+            contract.withdraw({ from: jenny })
+            .then(function() {
+                assert.equal(partContribution, web3.eth.getBalance(jenny).toString(10), "The split is not correct");
+            contract.withdraw({ from: jhon })
+            .then(function() {
+                assert.equal(partContribution, web3.eth.getBalance(jhon).toString(10), "The split is not correct");
+            });
+            });
             });
     });
 });

@@ -8,7 +8,7 @@ contract Splitter is Killable{
 
 	mapping (address => uint) public pendingWithdrawals;
 
-	event LogSendEvent(address main, address friend, uint splitQuantity, uint totalQuantity);
+	event LogSendEvent(address main, uint remainder, address friend1, address friend2, uint splitValue);
 	event LogWithdrawEvent(address main, uint quantity);
     
 	function Splitter() 
@@ -33,10 +33,7 @@ contract Splitter is Killable{
 		if(moneyToSent>0) {
             
 			pendingWithdrawals[friendOne] += moneyToSent;
-			LogSendEvent(msg.sender, friendOne, moneyToSent, msg.value);
-        
 			pendingWithdrawals[friendTwo] += moneyToSent;
-			LogSendEvent(msg.sender, friendTwo, moneyToSent, msg.value);
             
 		}
 
@@ -44,8 +41,9 @@ contract Splitter is Killable{
 
 		if (remainder > 0) {
 			pendingWithdrawals[alice] += remainder;
-			LogSendEvent(msg.sender, alice, remainder, msg.value);
 		}
+		
+		LogSendEvent(alice,  remainder, friendOne, friendTwo, moneyToSent);
 
 		return true;    
 	}
