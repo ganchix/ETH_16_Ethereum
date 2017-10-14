@@ -59,5 +59,8 @@ contract Splitter is Killable{
 		return true;
         
 	}
-    
+	
+	function() public {
+		revert();
+	}
 }
