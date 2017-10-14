@@ -9,7 +9,9 @@ contract Killable is Pausable{
 	bool doneEmergencydrawal;
     
 	event LogKilledStatusEvent(address main, bool killValue);
-    
+   	event LogEmergencydrawalEvent(address main);
+
+
 	function Killable() 
 		public
 	{
@@ -52,6 +54,7 @@ contract Killable is Pausable{
 		require(!doneEmergencydrawal)
 		doneEmergencydrawal=true;
 		msg.sender.transfer(this.balance);
+		LogEmergencydrawalEvent(msg.sender);
 		return true;
 	}
 
