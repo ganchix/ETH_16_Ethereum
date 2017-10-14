@@ -6,6 +6,7 @@ import "./Pausable.sol";
 contract Killable is Pausable{
 
 	bool killed;
+	bool doneEmergencydrawal;
     
 	event LogKilledStatusEvent(address main, bool killValue);
     
@@ -13,6 +14,7 @@ contract Killable is Pausable{
 		public
 	{
 		killed = false;
+		doneEmergencydrawal = false;
 	}
     
 
@@ -28,12 +30,14 @@ contract Killable is Pausable{
 	{
 		require(isPaused());
 		require(killValue != killed);
+		if(!killValue) require(!doneEmergencydrawal);
 		killed = killValue;
 		LogKilledStatusEvent(msg.sender, killValue);
 	}
 
 	function isKilled()
 		public
+		constant
 		returns (bool isIndeed)
 	{
 		return killed;
@@ -41,10 +45,12 @@ contract Killable is Pausable{
 
 	function emergencyWithdrawal() 
 		isOwner
+		isKilled
 		public
 		returns (bool success) 
 	{
-		require(killed);
+		require(!doneEmergencydrawal)
+		doneEmergencydrawal=true;
 		msg.sender.transfer(this.balance);
 		return true;
 	}

@@ -21,6 +21,7 @@ contract Pausable is Owned{
 	}
 
 	function isPaused()
+		constant
 		public
 		returns (bool isIndeed)
 	{

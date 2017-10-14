@@ -4,19 +4,11 @@ import "./Killable.sol";
 
 contract Splitter is Killable{
 
-	address public alice;
-
 	mapping (address => uint) public pendingWithdrawals;
 
 	event LogSendEvent(address main, uint remainder, address friend1, address friend2, uint splitValue);
 	event LogWithdrawEvent(address main, uint quantity);
     
-	function Splitter() 
-		public
-	{
-		alice = msg.sender; 
-	}
-
 	function split(address friendOne, address friendTwo) 
 		payable
 		isNotKilled
@@ -40,10 +32,10 @@ contract Splitter is Killable{
 		uint remainder = msg.value % 2;
 
 		if (remainder > 0) {
-			pendingWithdrawals[alice] += remainder;
+			pendingWithdrawals[msg.sender] += remainder;
 		}
 		
-		LogSendEvent(alice,  remainder, friendOne, friendTwo, moneyToSent);
+		LogSendEvent(msg.sender, remainder, friendOne, friendTwo, moneyToSent);
 
 		return true;    
 	}
