@@ -32,14 +32,16 @@ contract('Splitter', function(accounts) {
 
     });
 
+
+
     it("should apply the split correctly to bob and carol when not pass addresses", function() {
-        var carolBalance;
 
         return contract.split(carol, bob, { from: alice, value: contribution })
-            .then(function(tx) {
+            .then(function(txRecipt) {
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
                 return executeWithdrawAndCheckBalance(carol, partContribution)
             })
-            .then(function(){
+            .then(function() {
                 executeWithdrawAndCheckBalance(bob, partContribution);
             });
     });
@@ -49,14 +51,25 @@ contract('Splitter', function(accounts) {
     it("should apply the split correctly to addresses", function() {
 
         return contract.split(daniel, emma, { from: alice, value: contribution })
-            .then(function(tx) {
+            .then(function(txRecipt) {
+                assertSplitEvents(txRecipt, alice, daniel, emma, contribution);
                 return executeWithdrawAndCheckBalance(daniel, partContribution)
             })
-            .then(function(){
+            .then(function() {
                 executeWithdrawAndCheckBalance(emma, partContribution);
             });
     });
-    
+
+    function assertSplitEvents(txRecipt, owner, friend1, friend2, totalContribution) {
+        assert.equal(txRecipt.logs.length, 1);
+        assert.equal(txRecipt.logs[0].event, "LogSendEvent");
+        assert.equal(txRecipt.logs[0].args.main, owner);
+        assert.equal(txRecipt.logs[0].args.friend1, friend1);
+        assert.equal(txRecipt.logs[0].args.friend2, friend2);
+        var total = txRecipt.logs[0].args.splitValue.times(2)
+                .plus(txRecipt.logs[0].args.remainder);
+        assert.equal(total, totalContribution);
+    }
 
     function executeWithdrawAndCheckBalance(accountAddress, splitPart) {
 
@@ -70,6 +83,7 @@ contract('Splitter', function(accounts) {
                 return contract.withdraw({ from: accountAddress });
             })
             .then(function(txRecipt) {
+                assertWithdrawEvents(txRecipt, accountAddress, splitPart);
                 gasUsed = txRecipt.receipt.gasUsed;
                 return web3.eth.getTransaction(txRecipt.tx);
             })
@@ -81,6 +95,15 @@ contract('Splitter', function(accounts) {
             .then(function(balance) {
                 assert.equal(balanceAfter, balance, "The split is not correct");
             });
+
+    }
+
+    function assertWithdrawEvents(txRecipt, address, quantity) {
+        assert.equal(txRecipt.logs.length, 1);
+        assert.equal(txRecipt.logs[0].event, "LogWithdrawEvent");
+        assert.equal(txRecipt.logs[0].args.main, address);
+        assert.equal(txRecipt.logs[0].args.quantity.toString(10), quantity);
+
 
     }
 
