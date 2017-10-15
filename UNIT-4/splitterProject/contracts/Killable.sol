@@ -32,7 +32,7 @@ contract Killable is Pausable{
 	{
 		require(isPaused());
 		require(killValue != killed);
-		if(!killValue) require(!doneEmergencydrawal);
+		require(!doneEmergencydrawal);
 		killed = killValue;
 		LogKilledStatusEvent(msg.sender, killValue);
 	}
@@ -47,11 +47,11 @@ contract Killable is Pausable{
 
 	function emergencyWithdrawal() 
 		isOwner
-		isKilled
 		public
 		returns (bool success) 
 	{
-		require(!doneEmergencydrawal)
+		require(isKilled());
+		require(!doneEmergencydrawal);
 		doneEmergencydrawal=true;
 		msg.sender.transfer(this.balance);
 		LogEmergencydrawalEvent(msg.sender);

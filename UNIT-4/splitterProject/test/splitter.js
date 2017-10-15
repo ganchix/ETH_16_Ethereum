@@ -37,46 +37,62 @@ contract('Splitter', function(accounts) {
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(tx) {
-                return web3.eth.getBalance(carol);
+                return executeWithdrawAndCheckBalance(carol, partContribution)
             })
-            .then(function(balance) {
-                carolBalance = balance;
-                console.log("Carol Balance ", carolBalance);
-                return contract.withdraw({ from: carol });
-            })
-            .then(function(txnCarolWithDraw) {
-                var gasPrice = web3.eth.gasPrice;
-
-                console.log("Total gas ", txnCarolWithDraw.receipt.gasUsed);
-                console.log("partContribution ", partContribution);
-                console.log("txnCarolWithDraw ", txnCarolWithDraw);
-
-                var fee = gasPrice.times(txnCarolWithDraw.receipt.gasUsed);
-                console.log("fee ", fee);
-                var carolWithDrawBlance = carolBalance.plus(partContribution).minus(fee).toString(10);
-
-                console.log("carolWithDrawBlance ", carolWithDrawBlance);
-
-                assert.equal(carolWithDrawBlance, web3.eth.getBalance(carol).toString(10), "The split is not correct");
-                return contract.withdraw({ from: bob });
-            })
-            .then(function() {
-                assert.equal(partContribution, web3.eth.getBalance(bob).toString(10), "The split is not correct");
+            .then(function(){
+                executeWithdrawAndCheckBalance(bob, partContribution);
             });
     });
+
+
 
     it("should apply the split correctly to addresses", function() {
 
         return contract.split(daniel, emma, { from: alice, value: contribution })
             .then(function(tx) {
-                return contract.withdraw({ from: daniel });
+                return executeWithdrawAndCheckBalance(daniel, partContribution)
             })
-            .then(function() {
-                assert.equal(partContribution, web3.eth.getBalance(daniel).toString(10), "The split is not correct");
-                return contract.withdraw({ from: emma });
-            })
-            .then(function() {
-                assert.equal(partContribution, web3.eth.getBalance(emma).toString(10), "The split is not correct");
+            .then(function(){
+                executeWithdrawAndCheckBalance(emma, partContribution);
             });
     });
+    
+
+    function executeWithdrawAndCheckBalance(accountAddress, splitPart) {
+
+        var balanceBefore;
+        var balanceAfter;
+        var gasUsed;
+
+        return getBalance(accountAddress)
+            .then(function(balance) {
+                balanceBefore = balance;
+                return contract.withdraw({ from: accountAddress });
+            })
+            .then(function(txRecipt) {
+                gasUsed = txRecipt.receipt.gasUsed;
+                return web3.eth.getTransaction(txRecipt.tx);
+            })
+            .then(function(tx) {
+                var fee = tx.gasPrice.times(gasUsed);
+                balanceAfter = balanceBefore.plus(partContribution).minus(fee).toString(10);
+                return getBalance(accountAddress);
+            })
+            .then(function(balance) {
+                assert.equal(balanceAfter, balance, "The split is not correct");
+            });
+
+    }
+
+    function getBalance(address) {
+        return new Promise(function(resolve, reject) {
+            web3.eth.getBalance(address, function(error, result) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
 });
