@@ -9,14 +9,9 @@ contract('Splitter', function(accounts) {
     var daniel = accounts[3];
     var emma = accounts[4];
 
-
-    var contribution = 80;
-
-    var partContribution = contribution / 2;
-
     beforeEach(function() {
 
-        return Splitter.new(carol, bob, { from: alice })
+        return Splitter.new({ from: alice })
             .then(function(instance) {
                 contract = instance;
             })
@@ -34,7 +29,24 @@ contract('Splitter', function(accounts) {
 
 
 
-    it("should apply the split correctly to bob and carol when not pass addresses", function() {
+    it("should apply the split correctly to bob and carol", function() {
+
+        var contribution = 80;
+        var partContribution = contribution / 2;
+
+        return contract.split(carol, bob, { from: alice, value: contribution })
+            .then(function(txRecipt) {
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
+                return executeWithdrawAndCheckBalance(carol, partContribution)
+            })
+            .then(function() {
+                executeWithdrawAndCheckBalance(bob, partContribution);
+            });
+    });
+
+    it("should apply the split correctly if contribution is high to bob and carol", function() {
+        var contribution = 10000000;
+        var partContribution = contribution / 2;
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(txRecipt) {
@@ -47,17 +59,91 @@ contract('Splitter', function(accounts) {
     });
 
 
-
     it("should apply the split correctly to addresses", function() {
 
-        return contract.split(daniel, emma, { from: alice, value: contribution })
+        return contract.split(daniel, emma, { from: alice, value: 1 })
             .then(function(txRecipt) {
-                assertSplitEvents(txRecipt, alice, daniel, emma, contribution);
-                return executeWithdrawAndCheckBalance(daniel, partContribution)
+                assertSplitEvents(txRecipt, alice, daniel, emma, 1);
+                return executeWithdrawAndCheckBalance(alice, 1);
+            });
+    });
+
+    it("should fail if split and contract is paused ", function() {
+
+        return contract.pause(true, { from: alice })
+            .then(function(txRecipt) {
+                return contract.split(carol, bob, { from: alice, value: 1 });
+            })
+            .then(function(txRecipt) {
+                assert.isNotOk("It should fail");
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
+            });
+    });
+
+    it("should fail if withdraw and contract is paused ", function() {
+
+        var contribution = 80;
+        var partContribution = contribution / 2;
+
+        return contract.split(carol, bob, { from: alice, value: contribution })
+            .then(function(txRecipt) {
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
+                return executeWithdrawAndCheckBalance(carol, partContribution)
             })
             .then(function() {
-                executeWithdrawAndCheckBalance(emma, partContribution);
+                return contract.pause(true, { from: alice });
+            })
+            .then(function() {
+                return executeWithdrawAndCheckBalance(bob, partContribution);
+
+            })
+            .then(function(txRecipt) {
+                assert.isNotOk("It should fail");
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
             });
+    });
+
+    it("should fail if split and contract is killed ", function() {
+
+        return contract.pause(true, { from: alice })
+            .then(function(txRecipt) {
+                return contract.kill(true, { from: alice });
+            })
+            .then(function(txRecipt) {
+                return contract.split(carol, bob, { from: alice, value: 1 });
+            })
+            .then(function(txRecipt) {
+                assert.isNotOk("It should fail");
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
+            })
+
+    });
+
+    it("should fail if withdraw and contract is killed ", function() {
+
+        return contract.split(carol, bob, { from: alice, value: 1 })
+            .then(function(txRecipt) {
+                return contract.pause(true, { from: alice });
+            })
+            .then(function(txRecipt) {
+                return contract.kill(true, { from: alice });
+            })
+             .then(function(txRecipt) {
+                return executeWithdrawAndCheckBalance(alice, 1);
+            })
+            .then(function(txRecipt) {
+                assert.isNotOk("It should fail");
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
+            })
+
     });
 
     function assertSplitEvents(txRecipt, owner, friend1, friend2, totalContribution) {
@@ -67,11 +153,11 @@ contract('Splitter', function(accounts) {
         assert.equal(txRecipt.logs[0].args.friend1, friend1);
         assert.equal(txRecipt.logs[0].args.friend2, friend2);
         var total = txRecipt.logs[0].args.splitValue.times(2)
-                .plus(txRecipt.logs[0].args.remainder);
+            .plus(txRecipt.logs[0].args.remainder);
         assert.equal(total, totalContribution);
     }
 
-    function executeWithdrawAndCheckBalance(accountAddress, splitPart) {
+    function executeWithdrawAndCheckBalance(accountAddress, partContribution) {
 
         var balanceBefore;
         var balanceAfter;
@@ -83,7 +169,7 @@ contract('Splitter', function(accounts) {
                 return contract.withdraw({ from: accountAddress });
             })
             .then(function(txRecipt) {
-                assertWithdrawEvents(txRecipt, accountAddress, splitPart);
+                assertWithdrawEvents(txRecipt, accountAddress, partContribution);
                 gasUsed = txRecipt.receipt.gasUsed;
                 return web3.eth.getTransaction(txRecipt.tx);
             })
@@ -93,7 +179,7 @@ contract('Splitter', function(accounts) {
                 return getBalance(accountAddress);
             })
             .then(function(balance) {
-                assert.equal(balanceAfter, balance, "The split is not correct");
+                assert.equal(balanceAfter, balance.toString(10), "The split is not correct");
             });
 
     }
