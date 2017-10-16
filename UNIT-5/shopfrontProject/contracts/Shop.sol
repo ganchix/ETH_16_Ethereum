@@ -1,51 +1,35 @@
 pragma solidity ^0.4.4;
 
-contract Shop {
+import "./Killable.sol";
+import "./Administrable.sol";
 
-	struct Product {
-		uint price;
-		string name;
-		uint stockBalance;
-	}
 
-    uint ownerWithdrawals;
+contract Shop is Killable, Administrable {
 
-	mapping (address => uint) public payBack;
+    struct Product {
+        uint price;
+        string name;
+        uint stockBalance;
+        uint index;
+    }
 
-	mapping (uint => Product) stock;
-	
-	uint[] products;
-	
-	address administrator;
-	
-	address owner;
+    mapping (address => uint) public pendingWithdrawals;
 
-	event AddProductEvent(uint id, uint price, string name);
-	
-	event DeleteProductEvent(uint id);
-	
-	event BuyProductEvent(uint id);
+    mapping (uint => Product) stock;
+    
+    uint[] products;
+    
+    event AddProductEvent(uint id, uint price, string name, uint stockBalance);
+    
+    event DeleteProductEvent(uint id);
+    
+    event BuyProductEvent(uint id, address main);
 
     event LogWithdrawEvent(address main, uint quantity);
 
-    event LogPayMeBackEvent(address main, uint quantity);
-
-	function Shop(address administratorAddress) 
-		public
-	{
-		if(administratorAddress == address(0)){
-			administrator = msg.sender;
-		}
-		else {
-			administrator = administratorAddress;
-		}
-		owner = msg.sender;
-	}
-
-    modifier isOwner 
-    {
-        require(msg.sender == owner);
-        _;
+    function Shop(address administratorAddress) Administrable(administratorAddress)
+        public
+    {   
     }
 
     modifier isAdministrator 
@@ -54,110 +38,103 @@ contract Shop {
         _;
     }
     
-	function getProductCount() 
-		constant 
-		returns (uint length) 
-	{	
-		return products.length;	
-	}
+    function getProductCount() 
+        constant 
+        public
+        returns (uint length) 
+    {   
+        return products.length; 
+    }
 
-	function getProductIdAt(uint index)
-		constant
-		returns (uint id) 
-	{
-		return products[index];
-	}
+    function getProductIdAt(uint index)
+        constant
+        public
+        returns (uint id) 
+    {
+        return products[index];
+    }
 
-	function getProduct(uint id)
-		constant
-		returns (string name, uint price, uint stockBalance) 
-	{
-		Product product = stock[id];
-		return (product.name,
-			product.price,
-			product.stockBalance);
-	}
+    function getProduct(uint id)
+        constant
+        public
+        returns (string name, uint price, uint stockBalance) 
+    {
+        Product storage product = stock[id];
+        return (product.name,
+            product.price,
+            product.stockBalance);
+    }
     
-    function addProduct(uint id, uint price, string name)
-   		public 
-   		isAdministrator
-   	{
-   		products.push(id);
+    function addProduct(uint id, uint price, string name, uint stockBalance)
+        public 
+        isAdministrator
+        isNotKilled
+        isNotPaused
+        returns(bool success)
+    {
+        products.push(id);
         stock[id].price = price;
-        stock[id].stockBalance += 1;
+        stock[id].stockBalance = stockBalance;
         stock[id].name = name;
-        AddProductEvent(id, price, name);
-
+        stock[id].index = products.length - 1;
+        AddProductEvent(id, price, name, stockBalance);
+        return true;
     }
     
     function deleteProduct(uint id) 
-    	public 
-    	isAdministrator
+        public 
+        isAdministrator
+        isNotKilled
+        isNotPaused
+        returns(bool success)
     {
 
-        uint index = indexOf(id);
-
-        for (uint i = index; i<products.length-1; i++){
-            products[i] = products[i+1];
-        }
-        delete products[products.length-1];
-        products.length--;
+        uint index = stock[id].index;
         delete stock[id];
+        delete products[index];
+        products.length--;
         DeleteProductEvent(id);
+        return true;
+
     }
 
-    function indexOf(uint id) 
-    	private
-    	returns(uint) 
-	{
-    
-        for (uint i = 0; i<products.length-1; i++){
-             if(products[i] == id) return i;
-        }
-       	throw;
-  	}
-
-    
-    
     function buyProduct(uint id) 
-    	payable
-    	public
+        payable
+        isNotKilled
+        isNotPaused
+        public
+        returns(bool success)
     {    
         require(stock[id].price > 0);
         require(stock[id].price <= msg.value);
         require(stock[id].stockBalance > 0);
         
         stock[id].stockBalance--;
-        ownerWithdrawals += stock[id].price;
+        pendingWithdrawals[owner] += stock[id].price;
         
-        int payBack=msg.value-stock[id].price;
-        if(payBack>0) payBack[msg.sender]=payBack;
+        if(msg.value > stock[id].price){
+            uint payBackValue = (msg.value-stock[id].price);
+            pendingWithdrawals[msg.sender] += payBackValue;
+        }
         
-        BuyProductEvent(id);
+        BuyProductEvent(id, msg.sender);
+        return true;
     }
     
-    function withdraw() 
-    	public
-    	isOwner
+
+
+    function withdraw()
+        isNotKilled
+        isNotPaused
+        public
+        returns(bool success)
     {
-        
-        if (ownerWithdrawals<=0) revert(); 
+        uint quantity = pendingWithdrawals[msg.sender];
+        if (quantity<=0) revert(); 
             
-        ownerWithdrawals = 0;
-        msg.sender.transfer(ownerWithdrawals);
-        LogWithdrawEvent(msg.sender, ownerWithdrawals);
-        
-    }
-
-    function payMeBack()
-    	public
-    {
-
-        if (payBack[msg.sender]<=0) revert(); 
-            
-        payBack[msg.sender] = 0;
-        msg.sender.transfer(payBack[msg.sender]);
-        LogPayMeBackEvent(msg.sender, payBack[msg.sender]);
-
+        pendingWithdrawals[msg.sender] = 0;
+        msg.sender.transfer(quantity);
+        LogWithdrawEvent(msg.sender, quantity);
+        return true;
     }
 }
