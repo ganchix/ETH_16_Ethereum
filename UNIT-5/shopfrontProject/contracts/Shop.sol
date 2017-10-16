@@ -11,6 +11,7 @@ contract Shop is Killable, Administrable {
         string name;
         uint stockBalance;
         uint index;
+        bool exists;
     }
 
     mapping (address => uint) public pendingWithdrawals;
@@ -32,9 +33,9 @@ contract Shop is Killable, Administrable {
     {   
     }
 
-    modifier isAdministrator 
+    modifier existsProduct(uint id, bool value) 
     {
-        require(msg.sender == administrator);
+        require(stock[id].exists == value);
         _;
     }
     
