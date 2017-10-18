@@ -12,7 +12,7 @@ contract Splitter is Killable{
 	function split(address friendOne, address friendTwo) 
 		payable
 		isNotKilled
-		isNotPaused
+		whenPaused(false)
 		public
 		returns (bool success) 
 	{
@@ -43,14 +43,14 @@ contract Splitter is Killable{
 
 	function withdraw() 
 		isNotKilled
-		isNotPaused
+		whenPaused(false)
 		public 
 		returns (bool done) 
 	{
         
 		uint amount = pendingWithdrawals[msg.sender];
         
-		if (amount<=0) revert(); 
+		require(amount > 0); 
             
 		pendingWithdrawals[msg.sender] = 0;
 		msg.sender.transfer(amount);

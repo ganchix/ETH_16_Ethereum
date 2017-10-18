@@ -1,6 +1,12 @@
+const Promise = require('bluebird')
+
 var Splitter = artifacts.require("./Splitter.sol");
 
+web3.eth = Promise.promisifyAll(web3.eth)
+
 contract('Splitter', function(accounts) {
+
+
 
     var contract;
     var alice = accounts[0];
@@ -32,11 +38,11 @@ contract('Splitter', function(accounts) {
     it("should apply the split correctly to bob and carol", function() {
 
         var contribution = 80;
-        var partContribution = contribution / 2;
+        var partContribution = 40;
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(txRecipt) {
-                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution, partContribution, 0);
                 return executeWithdrawAndCheckBalance(carol, partContribution)
             })
             .then(function() {
@@ -46,11 +52,11 @@ contract('Splitter', function(accounts) {
 
     it("should apply the split correctly if contribution is high to bob and carol", function() {
         var contribution = 10000000;
-        var partContribution = contribution / 2;
+        var partContribution = 5000000;
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(txRecipt) {
-                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution, partContribution, 0);
                 return executeWithdrawAndCheckBalance(carol, partContribution)
             })
             .then(function() {
@@ -63,33 +69,33 @@ contract('Splitter', function(accounts) {
 
         return contract.split(daniel, emma, { from: alice, value: 1 })
             .then(function(txRecipt) {
-                assertSplitEvents(txRecipt, alice, daniel, emma, 1);
+                assertSplitEvents(txRecipt, alice, daniel, emma, 1, 0, 1);
                 return executeWithdrawAndCheckBalance(alice, 1);
             });
     });
 
-    it("should fail if split and contract is paused ", function() {
+    it("should fail if paused then attempt to split ", function() {
 
-        return contract.pause(true, { from: alice })
+        return contract.setPause(true, { from: alice })
             .then(function(txRecipt) {
                 return contract.split(carol, bob, { from: alice, value: 1 });
             })
             .then(function(txRecipt) {
-                assert.isNotOk("It should fail");
+                assert.fail(0, 1, 'Exception not thrown');
             })
             .catch(function(error) {
                 assert.isOk("It shouldn't fail");
             });
     });
 
-    it("should fail if withdraw and contract is paused ", function() {
+    it("should fail if paused then attempt to withdraw ", function() {
 
         var contribution = 80;
-        var partContribution = contribution / 2;
+        var partContribution = 40;
 
         return contract.split(carol, bob, { from: alice, value: contribution })
             .then(function(txRecipt) {
-                assertSplitEvents(txRecipt, alice, carol, bob, contribution);
+                assertSplitEvents(txRecipt, alice, carol, bob, contribution, partContribution, 0);
                 return executeWithdrawAndCheckBalance(carol, partContribution)
             })
             .then(function() {
@@ -100,45 +106,44 @@ contract('Splitter', function(accounts) {
 
             })
             .then(function(txRecipt) {
-                assert.isNotOk("It should fail");
+                assert.fail(0, 1, 'Exception not thrown');
             })
             .catch(function(error) {
                 assert.isOk("It shouldn't fail");
             });
     });
 
-    it("should fail if split and contract is killed ", function() {
+    it("should fail if killed then attempt to split ", function() {
 
-        return contract.pause(true, { from: alice })
+        return contract.setPause(true, { from: alice })
             .then(function(txRecipt) {
-                return contract.kill(true, { from: alice });
+                return contract.kill(1, { from: alice });
             })
             .then(function(txRecipt) {
                 return contract.split(carol, bob, { from: alice, value: 1 });
             })
             .then(function(txRecipt) {
-                assert.isNotOk("It should fail");
+                assert.fail(0, 1, 'Exception not thrown');
             })
             .catch(function(error) {
                 assert.isOk("It shouldn't fail");
             })
 
     });
-
-    it("should fail if withdraw and contract is killed ", function() {
+    it("should fail if killed then attempt to withdraw ", function() {
 
         return contract.split(carol, bob, { from: alice, value: 1 })
             .then(function(txRecipt) {
                 return contract.pause(true, { from: alice });
             })
             .then(function(txRecipt) {
-                return contract.kill(true, { from: alice });
+                return contract.kill(1, { from: alice });
             })
-             .then(function(txRecipt) {
+            .then(function(txRecipt) {
                 return executeWithdrawAndCheckBalance(alice, 1);
             })
             .then(function(txRecipt) {
-                assert.isNotOk("It should fail");
+                assert.fail(0, 1, 'Exception not thrown');
             })
             .catch(function(error) {
                 assert.isOk("It shouldn't fail");
@@ -146,14 +151,45 @@ contract('Splitter', function(accounts) {
 
     });
 
-    function assertSplitEvents(txRecipt, owner, friend1, friend2, totalContribution) {
-        assert.equal(txRecipt.logs.length, 1);
-        assert.equal(txRecipt.logs[0].event, "LogSendEvent");
-        assert.equal(txRecipt.logs[0].args.main, owner);
-        assert.equal(txRecipt.logs[0].args.friend1, friend1);
-        assert.equal(txRecipt.logs[0].args.friend2, friend2);
-        var total = txRecipt.logs[0].args.splitValue.times(2)
-            .plus(txRecipt.logs[0].args.remainder);
+    it("should fail if a not owner killed", function() {
+
+        return contract.kill(1, { from: bob })
+            .then(function(txRecipt) {
+                assert.fail(0, 1, 'Exception not thrown');
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
+            })
+
+    })
+
+    it("should fail if a not owner paused", function() {
+
+        return contract.setPause(1, { from: bob })
+            .then(function(txRecipt) {
+                assert.fail(0, 1, 'Exception not thrown');
+            })
+            .catch(function(error) {
+                assert.isOk("It shouldn't fail");
+            })
+
+    })
+
+    function assertSplitEvents(txReceipt, owner, friend1, friend2, totalContribution, splitValue, remainder) {
+        assert.equal(txReceipt.logs.length, 1);
+        assert.equal(txReceipt.logs[0].event, "LogSendEvent", "Worng event");
+
+        assert.deepEqual(txReceipt.logs[0].args, {
+            main: owner,
+            friend1: friend1,
+            friend2: friend2,
+            splitValue: web3.toBigNumber(splitValue),
+            remainder: web3.toBigNumber(remainder)
+        });
+
+        var total = txReceipt.logs[0].args.splitValue.times(2)
+            .plus(txReceipt.logs[0].args.remainder);
+
         assert.equal(total, totalContribution);
     }
 
@@ -163,7 +199,7 @@ contract('Splitter', function(accounts) {
         var balanceAfter;
         var gasUsed;
 
-        return getBalance(accountAddress)
+        return web3.eth.getBalanceAsync(accountAddress)
             .then(function(balance) {
                 balanceBefore = balance;
                 return contract.withdraw({ from: accountAddress });
@@ -171,37 +207,29 @@ contract('Splitter', function(accounts) {
             .then(function(txRecipt) {
                 assertWithdrawEvents(txRecipt, accountAddress, partContribution);
                 gasUsed = txRecipt.receipt.gasUsed;
-                return web3.eth.getTransaction(txRecipt.tx);
+                return web3.eth.getTransactionAsync(txRecipt.tx);
             })
             .then(function(tx) {
                 var fee = tx.gasPrice.times(gasUsed);
                 balanceAfter = balanceBefore.plus(partContribution).minus(fee).toString(10);
-                return getBalance(accountAddress);
+                return web3.eth.getBalanceAsync(accountAddress);
             })
             .then(function(balance) {
-                assert.equal(balanceAfter, balance.toString(10), "The split is not correct");
+                var balanceDecimal = balance.toString(10);
+                assert.equal(balanceAfter, balanceDecimal, "The split is not correct");
             });
 
     }
 
-    function assertWithdrawEvents(txRecipt, address, quantity) {
-        assert.equal(txRecipt.logs.length, 1);
-        assert.equal(txRecipt.logs[0].event, "LogWithdrawEvent");
-        assert.equal(txRecipt.logs[0].args.main, address);
-        assert.equal(txRecipt.logs[0].args.quantity.toString(10), quantity);
 
-
-    }
-
-    function getBalance(address) {
-        return new Promise(function(resolve, reject) {
-            web3.eth.getBalance(address, function(error, result) {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(result);
-                }
-            });
+    function assertWithdrawEvents(txReceipt, address, quantity) {
+        assert.equal(txReceipt.logs.length, 1);
+        assert.equal(txReceipt.logs[0].event, "LogWithdrawEvent", "Worng event");
+        assert.deepEqual(txReceipt.logs[0].args, {
+            main: address,
+            quantity: web3.toBigNumber(quantity)
         });
+
     }
+
 });

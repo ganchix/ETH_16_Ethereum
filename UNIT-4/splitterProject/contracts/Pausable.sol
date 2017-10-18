@@ -14,21 +14,14 @@ contract Pausable is Owned{
 		paused = false;
 	}
     
-	modifier isNotPaused 
+
+	modifier whenPaused(bool pausedValue) 
 	{
-		require(!paused);
+		require(paused == pausedValue);
  		_;
 	}
 
-	function isPaused()
-		constant
-		public
-		returns (bool isIndeed)
-	{
-		return paused;
-	}
-    
-	function pause(bool pauseValue) 
+	function setPause(bool pauseValue) 
 		isOwner 
 		public 
 	{

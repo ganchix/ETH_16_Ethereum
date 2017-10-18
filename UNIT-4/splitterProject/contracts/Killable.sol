@@ -5,54 +5,63 @@ import "./Pausable.sol";
 
 contract Killable is Pausable{
 
-	bool killed;
-	bool doneEmergencydrawal;
-    
-	event LogKilledStatusEvent(address main, bool killValue);
+    enum KilledStatus { ALIVE, KILLED, WITHDRAWN }
+
+    KilledStatus status;
+	event LogKilledStatusEvent(address main, KilledStatus killStatus);
    	event LogEmergencydrawalEvent(address main);
 
 
 	function Killable() 
 		public
 	{
-		killed = false;
-		doneEmergencydrawal = false;
+        status =  KilledStatus.ALIVE;
 	}
     
 
 	modifier isNotKilled 
 	{
-		require(!killed);
+		require(status == KilledStatus.ALIVE);
+		_;
+	}
+	
+	modifier isNotWithdraw()
+	{
+		require(status != KilledStatus.WITHDRAWN);
 		_;
 	}
     
-	function kill(bool killValue) 
+    
+	function kill(uint killValue) 
 		isOwner 
+		isNotWithdraw
+		whenPaused(true)
 		public 
 	{
-		require(isPaused());
-		require(killValue != killed);
-		require(!doneEmergencydrawal);
-		killed = killValue;
-		LogKilledStatusEvent(msg.sender, killValue);
+	    require(uint(KilledStatus.WITHDRAWN) < killValue);
+	    require(status != KilledStatus(killValue));
+
+        status = KilledStatus(killValue);
+        
+		LogKilledStatusEvent(msg.sender, status);
 	}
 
 	function isKilled()
 		public
 		constant
-		returns (bool isIndeed)
+		returns (bool isInNeed)
 	{
-		return killed;
+		return status == KilledStatus.KILLED;
 	}
 
 	function emergencyWithdrawal() 
 		isOwner
+		isNotWithdraw
 		public
 		returns (bool success) 
 	{
 		require(isKilled());
-		require(!doneEmergencydrawal);
-		doneEmergencydrawal=true;
+		status = KilledStatus.WITHDRAWN;
 		msg.sender.transfer(this.balance);
 		LogEmergencydrawalEvent(msg.sender);
 		return true;
