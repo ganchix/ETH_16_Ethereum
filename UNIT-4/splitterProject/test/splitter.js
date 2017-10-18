@@ -211,12 +211,11 @@ contract('Splitter', function(accounts) {
             })
             .then(function(tx) {
                 var fee = tx.gasPrice.times(gasUsed);
-                balanceAfter = balanceBefore.plus(partContribution).minus(fee).toString(10);
+                balanceAfter = balanceBefore.plus(partContribution).minus(fee);
                 return web3.eth.getBalanceAsync(accountAddress);
             })
             .then(function(balance) {
-                var balanceDecimal = balance.toString(10);
-                assert.equal(balanceAfter, balanceDecimal, "The split is not correct");
+                assert.equal(balanceAfter.toString(10), balance.toString(10), "The split is not correct");
             });
 
     }
