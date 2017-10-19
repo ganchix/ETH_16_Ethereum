@@ -11,56 +11,55 @@ contract Killable is Pausable{
 	event LogKilledStatusEvent(address main, KilledStatus killStatus);
    	event LogEmergencydrawalEvent(address main);
 
-
 	function Killable() 
 		public
 	{
         status =  KilledStatus.ALIVE;
 	}
     
+    
+    modifier whenKillStatus(KilledStatus killedStatus)
+    {
+        require(status == killedStatus);
+        _;
+    }
+    
 
-	modifier isNotKilled 
-	{
-		require(status == KilledStatus.ALIVE);
-		_;
-	}
-	
-	modifier isNotWithdraw()
-	{
-		require(status != KilledStatus.WITHDRAWN);
-		_;
-	}
+    modifier whenNotKillStatus(KilledStatus killedStatus)
+    {
+        require(status != killedStatus);
+        _;
+    }
     
-    
-	function kill(uint killValue) 
+	function getKilled()
+	    public
+	    constant
+	    returns (KilledStatus killedStatus)
+    {
+        return status;
+    }
+
+	function kill(KilledStatus killValue) 
 		isOwner 
-		isNotWithdraw
+		whenNotKillStatus(KilledStatus.WITHDRAWN)
 		whenPaused(true)
 		public 
 	{
-	    require(uint(KilledStatus.WITHDRAWN) < killValue);
-	    require(status != KilledStatus(killValue));
+	    require(KilledStatus.WITHDRAWN != killValue);
+	    require(status != killValue);
 
-        status = KilledStatus(killValue);
+        status = killValue;
         
 		LogKilledStatusEvent(msg.sender, status);
 	}
 
-	function isKilled()
-		public
-		constant
-		returns (bool isInNeed)
-	{
-		return status == KilledStatus.KILLED;
-	}
-
 	function emergencyWithdrawal() 
 		isOwner
-		isNotWithdraw
+		whenKillStatus(KilledStatus.KILLED)
+		whenNotKillStatus(KilledStatus.WITHDRAWN)
 		public
 		returns (bool success) 
 	{
-		require(isKilled());
 		status = KilledStatus.WITHDRAWN;
 		msg.sender.transfer(this.balance);
 		LogEmergencydrawalEvent(msg.sender);

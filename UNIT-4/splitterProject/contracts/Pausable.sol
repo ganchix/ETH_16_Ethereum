@@ -14,7 +14,7 @@ contract Pausable is Owned{
 		paused = false;
 	}
     
-
+    
 	modifier whenPaused(bool pausedValue) 
 	{
 		require(paused == pausedValue);
@@ -28,6 +28,14 @@ contract Pausable is Owned{
 		require(paused != pauseValue);
 		paused = pauseValue;
 		LogPauseEvent(msg.sender, pauseValue);
+	}
+	
+	function isPaused() 
+		public
+		constant
+		returns (bool isInNeed)
+	{
+        return paused;
 	}
 
 }

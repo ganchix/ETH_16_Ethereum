@@ -11,7 +11,7 @@ contract Splitter is Killable{
     
 	function split(address friendOne, address friendTwo) 
 		payable
-		isNotKilled
+		whenKillStatus(KilledStatus.ALIVE)
 		whenPaused(false)
 		public
 		returns (bool success) 
@@ -42,7 +42,7 @@ contract Splitter is Killable{
 
 
 	function withdraw() 
-		isNotKilled
+		whenKillStatus(KilledStatus.ALIVE)
 		whenPaused(false)
 		public 
 		returns (bool done) 
